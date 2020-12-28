@@ -32,12 +32,18 @@ impl<I2C: hal::blocking::i2c::WriteRead> TMP117<I2C> {
     }
 
     pub fn read(&mut self) -> Result<f32, I2C::Error> {
+        // 16 bit buffer
         let mut data: [u8; TEMP_LENGTH] = [0; TEMP_LENGTH];
+
+
         self.com.write_read(self.addr, &[TEMP_ADDR], &mut data)?;
 
-        let count = ((data[0] as u32) << 8) | (data[1] as u32);
-        let C = ((count as f32) * 7.8125) / 1000.0;
+        // Convert into raw count
+        let count = u16::from_be_bytes(data);
 
-        return Ok(C);
+        // Convert count into milli Celcius, then into Celcius
+        let degrees_c = ((count as f32) * 7.8125) / 1000.0;
+
+        Ok(degrees_c)
     }
 }
